@@ -1,13 +1,21 @@
-version: "3"
+version: "3.8"
+
 services:
-    asphyxia:
-        image: kaanreal/asphyxia:latest
-        # alternaive: ghcr.io/kaanreal/asphyxia:latest
-        container_name: asphyxia
-        restart: always
-        ports:
-            - "8083:8083"
-            - "5700:5700"
-        volumes:
-            # Replace the path on the left with your local Pi directory
-            - /home/pi/asphyxia-server:/app/data
+  asphyxia:
+    build: .
+    container_name: asphyxia
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    volumes:
+      # Change this path to wherever you want your Asphyxia data
+      # Example: /home/kaan/asphyxia-core:/data
+      - ./asphyxia-data:/data
+    environment:
+      - TZ=Europe/Amsterdam
+      # Optional environment variables:
+      # - ASPHYXIA_LISTENING_PORT=8083
+      # - ASPHYXIA_BINDING_HOST=0.0.0.0
+      # - ASPHYXIA_MATCHING_PORT=8084
+      # - ASPHYXIA_DEV_MODE=1
+      # - ASPHYXIA_PING_IP=your_ip

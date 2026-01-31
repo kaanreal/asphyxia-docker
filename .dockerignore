@@ -1,0 +1,8 @@
+.git
+.github
+*.zip
+*.tar.gz
+README.md
+docker-compose.yml
+custom
+asphyxia-data

@@ -1,67 +1,83 @@
 #!/bin/sh
 
-readonly ASPHYXIA_DIR="/app"
+readonly ASPHYXIA_DIR="/data"
 readonly CONFIG_FILE="${ASPHYXIA_DIR}/config.ini"
-readonly CUSTOM_DIR="/app/data"
-readonly CUSTOM_CONFIG="${CUSTOM_DIR}/config.ini"
-readonly CUSTOM_SAVE_DIR="${CUSTOM_DIR}/savedata"
+readonly DEFAULT_CONFIG_FILE="/usr/local/share/asphyxia/config_default.ini"
 readonly PLUGINS_DIR="${ASPHYXIA_DIR}/plugins"
-readonly DEFAULT_PLUGINS_DIR="${ASPHYXIA_DIR}/plugins_default"
+readonly DEFAULT_PLUGINS_DIR="/usr/local/share/asphyxia/plugins_default"
+readonly SAVEDATA_DIR="${ASPHYXIA_DIR}/savedata"
+readonly ASPHYXIA_EXEC="/usr/local/share/asphyxia/asphyxia-core"
 
-log() { echo "LOG: $*" >&2; }
-die() { echo "ERROR: $*" >&2; exit 1; }
-
-setup_config() {
-    log "Setting up configuration..."
-    if [ ! -f "${CUSTOM_CONFIG}" ]; then
-        log "Custom config.ini not found; creating initial file."
-        printf "[core]\n  port = 8083\n  bind = \"0.0.0.0\"\n" > "${CUSTOM_CONFIG}"
-    fi
-    ln -sf "${CUSTOM_CONFIG}" "${CONFIG_FILE}" || die "Failed to symlink config"
+log() {
+    echo "LOG: $*" >&2
 }
 
-setup_plugins() {
-    log "Setting up plugins..."
+die() {
+    echo "ERROR: $*" >&2
+    exit 1
+}
+
+setup_data_dir() {
+    log "Setting up data directory..."
+    
+    # Create data directory structure if it doesn't exist
+    mkdir -p "${ASPHYXIA_DIR}"
     mkdir -p "${PLUGINS_DIR}"
-    rm -rf "${PLUGINS_DIR:?}"/* || die "Failed to clean plugins directory"
-
-    # Add official stable plugins unless replacement is requested
-    if [ -z "${ASPHYXIA_PLUGIN_REPLACE}" ]; then
-        log "Adding official stable plugins..."
-        cp -r "${DEFAULT_PLUGINS_DIR}"/* "${PLUGINS_DIR}/" || die "Failed to copy defaults"
+    mkdir -p "${SAVEDATA_DIR}"
+    
+    # Copy default config if no config exists
+    if [ ! -f "${CONFIG_FILE}" ]; then
+        if [ -f "${DEFAULT_CONFIG_FILE}" ]; then
+            log "No config.ini found; copying default config"
+            cp "${DEFAULT_CONFIG_FILE}" "${CONFIG_FILE}"
+        else
+            log "Warning: No default config found"
+        fi
+    else
+        log "Using existing config.ini"
     fi
-
-    # Add custom plugins from Pi volume if they exist
-    if [ -d "${CUSTOM_DIR}/plugins" ] && [ "$(ls -A "${CUSTOM_DIR}/plugins")" ]; then
-        log "Merging custom plugins from volume..."
-        cp -r "${CUSTOM_DIR}/plugins"/* "${PLUGINS_DIR}/" || die "Failed to copy custom plugins"
+    
+    # Copy default plugins if plugins directory is empty
+    if [ -z "$(ls -A "${PLUGINS_DIR}" 2>/dev/null)" ]; then
+        if [ -d "${DEFAULT_PLUGINS_DIR}" ] && [ -n "$(ls -A "${DEFAULT_PLUGINS_DIR}" 2>/dev/null)" ]; then
+            log "No plugins found; copying default plugins"
+            cp -r "${DEFAULT_PLUGINS_DIR}"/* "${PLUGINS_DIR}"/
+        else
+            log "Warning: No default plugins found"
+        fi
+    else
+        log "Using existing plugins"
     fi
 }
 
 build_command_args() {
-    local args="-d ${CUSTOM_SAVE_DIR}"
-    mkdir -p "${CUSTOM_SAVE_DIR}"
+    local args=""
 
-    # Environment variable overrides
-    [ -n "${ASPHYXIA_LISTENING_PORT}" ] && args="$args -p $ASPHYXIA_LISTENING_PORT"
-    [ -n "${ASPHYXIA_BINDING_HOST}" ]   && args="$args -b $ASPHYXIA_BINDING_HOST"
-    [ -n "${ASPHYXIA_MATCHING_PORT}" ]  && args="$args -m $ASPHYXIA_MATCHING_PORT"
-    
+    # Always use the data directory for savedata
+    args="$args -d ${SAVEDATA_DIR}"
+
+    # Build optional arguments from environment variables
+    [ -n "${ASPHYXIA_LISTENING_PORT:-}" ] && args="$args --port $ASPHYXIA_LISTENING_PORT"
+    [ -n "${ASPHYXIA_BINDING_HOST:-}" ] && args="$args --bind $ASPHYXIA_BINDING_HOST"
+    [ -n "${ASPHYXIA_MATCHING_PORT:-}" ] && args="$args --matching-port $ASPHYXIA_MATCHING_PORT"
+    [ -n "${ASPHYXIA_DEV_MODE:-}" ] && args="$args --dev"
+    [ -n "${ASPHYXIA_PING_IP:-}" ] && args="$args --ping-addr $ASPHYXIA_PING_IP"
+
     echo "$args"
 }
 
 main() {
-    setup_config
-    setup_plugins
+    log "Starting Asphyxia bootstrap..."
     
-    # Ensure the Pi volume is writable for the database
-    chmod -R 777 "${CUSTOM_DIR}"
+    [ -x "${ASPHYXIA_EXEC}" ] || die "Asphyxia executable not found or not executable: ${ASPHYXIA_EXEC}"
+    
+    setup_data_dir
 
     local cmd_args
     cmd_args=$(build_command_args)
-    readonly ASPHYXIA_EXEC="${ASPHYXIA_DIR}/asphyxia-core-armv7"
-    
+
     log "Running: ${ASPHYXIA_EXEC} ${cmd_args}"
+    cd "${ASPHYXIA_DIR}" || die "Failed to change to data directory"
     exec ${ASPHYXIA_EXEC} ${cmd_args}
 }
 
