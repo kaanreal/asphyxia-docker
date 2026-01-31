@@ -2,7 +2,7 @@ FROM --platform=linux/arm/v7 debian:bookworm-slim
 
 WORKDIR /app
 
-# Install dependencies including ca-certificates
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     wget \
     unzip \
@@ -17,12 +17,13 @@ RUN wget --no-check-certificate https://github.com/asphyxia-core/core/releases/d
     rm asphyxia-core-armv7.zip && \
     chmod +x asphyxia-core-armv7
 
-# 2. Robust Plugin Extraction
-# We unzip, then move whatever folder starts with 'plugins-' to 'plugins_default'
+# 2. Plugin Extraction with Debugging
+# We list files (ls -la) so you can see exactly what folder was created if it fails.
 RUN wget --no-check-certificate https://github.com/asphyxia-core/plugins/archive/refs/heads/stable.zip && \
     unzip stable.zip && \
-    mv plugins-* plugins_default && \
-    mkdir plugins && \
+    ls -la && \
+    find . -maxdepth 1 -type d -name "plugins-*" -exec mv {} plugins_default \; && \
+    mkdir -p plugins && \
     rm stable.zip
 
 COPY bootstrap.sh .
