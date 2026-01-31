@@ -2,7 +2,7 @@ FROM --platform=linux/arm/v7 debian:bookworm-slim
 
 WORKDIR /app
 
-# Install system dependencies + ca-certificates for secure downloads
+# Install dependencies including ca-certificates for SSL
 RUN apt-get update && apt-get install -y \
     wget \
     unzip \
@@ -17,12 +17,11 @@ RUN wget --no-check-certificate https://github.com/asphyxia-core/core/releases/d
     rm asphyxia-core-armv7.zip && \
     chmod +x asphyxia-core-armv7
 
-# 2. Download Stable Plugins with better error handling
-# We unzip first, then find the directory name dynamically to avoid 'mv' errors
+# 2. Robust Plugin Download
+# We use "|| true" to ignore unzip warnings that trip up Docker
 RUN wget --no-check-certificate https://github.com/asphyxia-core/plugins/archive/refs/heads/stable.zip && \
-    unzip stable.zip && \
-    DIR_NAME=$(ls -d plugins-*) && \
-    mv "$DIR_NAME" plugins_default && \
+    unzip stable.zip || true && \
+    mv plugins-stable plugins_default && \
     mkdir plugins && \
     rm stable.zip
 
