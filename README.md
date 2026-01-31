@@ -26,6 +26,7 @@ version: "3"
 services:
     asphyxia:
         image: kaanreal/asphyxia:latest
+        # alternaive: ghcr.io/kaanreal/asphyxia:latest
         container_name: asphyxia
         restart: always
         ports:
