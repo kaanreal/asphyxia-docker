@@ -11,11 +11,11 @@ Asphyxia is a private server emulator for arcade games, designed to be easy to d
 The server automatically downloads the latest Asphyxia core and plugins, and ensures your configuration and data are always persistent.
 
 ## Features
+
 - Pre-configured Dockerfile for ARMv7 (Raspberry Pi and similar devices)
 - Automatic download and setup of Asphyxia core and plugins
 - Persistent storage for configuration, plugins, and savedata
 - Easy startup and management with Docker Compose
-
 
 ## Sample Docker Compose Stack
 
@@ -26,6 +26,8 @@ version: "3.9"
 services:
 	asphyxia:
 		image: kaanreal/asphyxia:latest
+		# Alternative for GitHub Packages
+		image: ghcr.io/kaanreal/asphyxia-docker:latest
 		container_name: asphyxia-server
 		restart: always
 		ports:
@@ -40,21 +42,25 @@ services:
 ## Quick Start
 
 ### 1. Clone this repository
+
 ```sh
 git clone https://github.com/yourusername/asphyxia-docker.git
 cd asphyxia-docker
 ```
 
 ### 2. Build and run with Docker Compose
+
 ```sh
 docker-compose up -d
 ```
 
 ### 3. Access
+
 - Asphyxia server will be available on ports **8083** and **5700**.
 - Configuration, plugins, and savedata are stored in the local folders and mapped into the container.
 
 ## Folder Structure
+
 - `config.ini` — Main configuration file (auto-created if missing)
 - `plugins/` — Plugins directory (auto-populated on first run)
 - `savedata/` — Persistent game/server data
@@ -63,6 +69,7 @@ docker-compose up -d
 - `entrypoint.sh` — Startup script for container logic
 
 ## Customization
+
 - Edit `config.ini` to configure your server.
 - Add or update plugins in the `plugins/` folder.
 - All changes persist across container restarts.
@@ -97,19 +104,24 @@ For help, open an issue on the GitHub repository or visit the Asphyxia community
 ---
 
 ## Updating
+
 To update Asphyxia or plugins, rebuild the image:
+
 ```sh
 docker-compose build --no-cache
 ```
 
 ## Requirements
+
 - Docker
 - Docker Compose
 - ARMv7 device (e.g., Raspberry Pi) or compatible system
 
 ## Credits
+
 - [Asphyxia Core](https://github.com/asphyxia-core/core)
 - [Asphyxia Plugins](https://github.com/asphyxia-core/plugins)
 
 ## License
+
 MIT License
