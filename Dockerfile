@@ -2,21 +2,27 @@ FROM --platform=linux/arm/v7 debian:bookworm-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies + ca-certificates for secure downloads
 RUN apt-get update && apt-get install -y \
-    wget unzip libatomic1 libstdc++6 \
+    wget \
+    unzip \
+    ca-certificates \
+    libatomic1 \
+    libstdc++6 \
     && rm -rf /var/lib/apt/lists/*
 
-# Download Asphyxia Core v1.60a (ARMv7)
-RUN wget https://github.com/asphyxia-core/core/releases/download/v1.60a/asphyxia-core-armv7.zip && \
+# 1. Download Asphyxia Core v1.60a (ARMv7)
+RUN wget --no-check-certificate https://github.com/asphyxia-core/core/releases/download/v1.60a/asphyxia-core-armv7.zip && \
     unzip asphyxia-core-armv7.zip && \
     rm asphyxia-core-armv7.zip && \
     chmod +x asphyxia-core-armv7
 
-# Download Stable Plugins
-RUN wget https://github.com/asphyxia-core/plugins/archive/refs/heads/stable.zip && \
+# 2. Download Stable Plugins with better error handling
+# We unzip first, then find the directory name dynamically to avoid 'mv' errors
+RUN wget --no-check-certificate https://github.com/asphyxia-core/plugins/archive/refs/heads/stable.zip && \
     unzip stable.zip && \
-    mv plugins-stable plugins_default && \
+    DIR_NAME=$(ls -d plugins-*) && \
+    mv "$DIR_NAME" plugins_default && \
     mkdir plugins && \
     rm stable.zip
 
