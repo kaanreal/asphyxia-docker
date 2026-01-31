@@ -2,14 +2,14 @@ version: "3.8"
 
 services:
   asphyxia:
-    build: .
+    image: kaanreal/asphyxia:latest
     container_name: asphyxia
     restart: unless-stopped
     ports:
       - "8083:8083"
     volumes:
       # Change this path to wherever you want your Asphyxia data
-      # Example: /home/kaan/asphyxia-core:/data
+      # Example: /home/pi/asphyxia-core:/data
       - ./asphyxia-data:/data
     environment:
       - TZ=Europe/Amsterdam

@@ -1,43 +1,39 @@
 # Asphyxia Docker (ARMv7 / Raspberry Pi)
 
-This is a Docker setup for Asphyxia CORE, optimized for ARMv7 devices (like Raspberry Pi) and designed to work easily with Portainer.
+## 1. Build & Push (Required for Portainer)
+Portainer cannot build images from local files on the host (unless you use Git). You must build the image on your PC and push it to Docker Hub.
 
-## Features
-- **ARMv7 Support**: Downloads the correct binary for Raspberry Pi.
-- **Persistent Data**: All important data (config, plugins, savedata) is stored in a single `/data` volume.
-- **Auto-Setup**: If your data volume is empty, it automatically populates it with default config and plugins.
-
-## Quick Start (CLI)
-
-1.  Build and run:
-    ```bash
-    docker-compose up -d --build
-    ```
-2.  Your data will appear in the `./asphyxia-data` folder on your host.
-
-## Portainer Setup
-
-1.  Go to **Stacks** > **Add stack**.
-2.  Name it `asphyxia`.
-3.  Paste the contents of `docker-compose.yml` into the Web editor.
-    *   **Important**: You cannot "Build" from a local path in Portainer unless you use a git repository.
-    *   **Option A (Git)**: Connect this repository to Portainer.
-    *   **Option B (Image)**: Build the image locally first (`docker build -t asphyxia-armv7 .`) and change `build: .` to `image: asphyxia-armv7` in the compose file.
-
-### Recommended Portainer Volume Path
-In the `docker-compose.yml`, change the volume path to where you want files on your Pi:
-
-```yaml
-    volumes:
-      - /home/pi/asphyxia-data:/data
+Run this command in the project folder:
+```powershell
+docker buildx build --platform linux/arm/v7 -t kaanreal/asphyxia:latest --push .
 ```
+*(Make sure you are logged in with `docker login` first)*
 
-## Directory Structure
-After the first run, your host directory (e.g., `/home/pi/asphyxia-data`) will contain:
+## 2. Deploy on Portainer (Raspberry Pi)
+1.  Go to **Stacks** -> **Add stack**.
+2.  Name: `asphyxia`
+3.  Paste the contents of `docker-compose.yml`:
+    ```yaml
+    version: "3.8"
+    services:
+      asphyxia:
+        image: kaanreal/asphyxia:latest
+        container_name: asphyxia
+        restart: unless-stopped
+        ports:
+          - "8083:8083"
+        volumes:
+          # Use absolute path on the Pi
+          - /home/pi/asphyxia-data:/data
+        environment:
+          - TZ=Europe/Amsterdam
+    ```
+4.  Click **Deploy the stack**.
 
-*   `config.ini` - Main configuration file.
-*   `plugins/` - Put your plugins here.
-*   `savedata/` - Player save data is stored here.
+## 3. Manage Files
+The first time it runs, it will populate `/home/pi/asphyxia-data` with:
+- `config.ini`
+- `plugins/`
+- `savedata/`
 
-## Troubleshooting
-- **Permissions**: If files are created as `root`, run `sudo chown -R $USER:$USER ./asphyxia-data` on your host to edit them.
+You can edit `config.ini` or add plugins directly in that folder on your Pi.

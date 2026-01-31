@@ -15,16 +15,15 @@ RUN apk add --no-cache gcompat libgcc libstdc++ && \
     unzip plugins-stable.zip -d ./ && \
     mkdir -p ./asphyxia/plugins_default && \
     cp -r plugins-stable/* ./asphyxia/plugins_default/ 2>/dev/null || true && \
-    # Save a copy of the default config
     cp ./asphyxia/config.ini ./asphyxia/config_default.ini 2>/dev/null || true && \
     rm -f *.zip && \
     rm -rf plugins-stable && \
+    sed -i 's/\r$//' bootstrap.sh && \
+    chmod +x bootstrap.sh && \
     chmod -R 774 ./asphyxia && \
-    chmod +x ./bootstrap.sh && \
     mkdir -p /data
 
 VOLUME /data
-
 EXPOSE 8083
 
 CMD ["/usr/local/share/bootstrap.sh"]
