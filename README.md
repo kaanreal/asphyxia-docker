@@ -22,21 +22,18 @@ The server automatically downloads the latest Asphyxia core and plugins, and ens
 Here is a sample `docker-compose.yml` for running Asphyxia:
 
 ```yaml
-version: "3.9"
+version: "3"
 services:
-	asphyxia:
-		image: kaanreal/asphyxia:latest
-		# Alternative for GitHub Packages
-		image: ghcr.io/kaanreal/asphyxia-docker:latest
-		container_name: asphyxia-server
-		restart: always
-		ports:
-			- "8083:8083"
-			- "5700:5700"
-		volumes:
-			- ./config.ini:/app/config.ini
-			- ./plugins:/app/plugins
-			- ./savedata:/app/savedata
+    asphyxia:
+        image: kaanreal/asphyxia:latest
+        container_name: asphyxia
+        restart: always
+        ports:
+            - "8083:8083"
+            - "5700:5700"
+        volumes:
+            # Replace the path on the left with your local Pi directory
+            - /home/pi/asphyxia-server:/app/data
 ```
 
 ## Quick Start

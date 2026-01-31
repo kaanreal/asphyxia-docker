@@ -15,10 +15,11 @@ if [ ! -f /app/data/config.ini ]; then
     touch /app/data/config.ini
 fi
 
-# Synchronize host config to the working directory
-cp /app/data/config.ini /app/config.ini
+# IMPORTANT: Link the config.ini so it's directly in the /app folder
+ln -sf /app/data/config.ini /app/config.ini
 
-# Start Asphyxia Core. 
-# We explicitly point to the mounted directories to avoid symlink issues.
+# Start Asphyxia Core
+# We use -p to tell Asphyxia EXACTLY where the plugins are
+# We use -d to tell Asphyxia EXACTLY where the savedata is
 echo "Starting Asphyxia Core v1.60a..."
-exec ./asphyxia-core-armv7
+exec ./asphyxia-core-armv7 -p /app/data/plugins -d /app/data/savedata
