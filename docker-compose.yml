@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+    asphyxia:
+        image: kaanreal/asphyxia:latest
+        container_name: asphyxia-server
+        restart: always
+        ports:
+            - "8083:8083"
+            - "5700:5700"
+        volumes:
+            # Use ${PWD} for the current directory or tell users to set their path
+            - ./config.ini:/app/config.ini
+            - ./plugins:/app/plugins
+            - ./savedata:/app/savedata
