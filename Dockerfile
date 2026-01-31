@@ -2,7 +2,7 @@ FROM --platform=linux/arm/v7 debian:bookworm-slim
 
 WORKDIR /app
 
-# Install dependencies including ca-certificates for SSL
+# Install dependencies including ca-certificates
 RUN apt-get update && apt-get install -y \
     wget \
     unzip \
@@ -11,24 +11,23 @@ RUN apt-get update && apt-get install -y \
     libstdc++6 \
     && rm -rf /var/lib/apt/lists/*
 
-# 1. Download Asphyxia Core v1.60a (ARMv7)
+# 1. Download Asphyxia Core
 RUN wget --no-check-certificate https://github.com/asphyxia-core/core/releases/download/v1.60a/asphyxia-core-armv7.zip && \
     unzip asphyxia-core-armv7.zip && \
     rm asphyxia-core-armv7.zip && \
     chmod +x asphyxia-core-armv7
 
-# 2. Robust Plugin Download
-# We use "|| true" to ignore unzip warnings that trip up Docker
+# 2. Robust Plugin Extraction
+# We unzip, then move whatever folder starts with 'plugins-' to 'plugins_default'
 RUN wget --no-check-certificate https://github.com/asphyxia-core/plugins/archive/refs/heads/stable.zip && \
-    unzip stable.zip || true && \
-    mv plugins-stable plugins_default && \
+    unzip stable.zip && \
+    mv plugins-* plugins_default && \
     mkdir plugins && \
     rm stable.zip
 
 COPY bootstrap.sh .
 RUN chmod +x bootstrap.sh
 
-# Data mount point for the Raspberry Pi
 RUN mkdir -p /app/data
 
 EXPOSE 8083 5700
