@@ -35,41 +35,45 @@ setup_data_dir() {
     fi
     
     # 2. Plugins Setup
-    # We check if plugins directory is effectively empty
+    # Double check if plugins directory is "empty"
+    # We check if specific plugins folder is populated.
     if [ -z "$(ls -A "${PLUGINS_DIR}" 2>/dev/null)" ]; then
         if [ -d "${DEFAULT_PLUGINS_DIR}" ]; then
              log "No plugins found; copying default plugins..."
-             # Copy CONTENTS of default plugins to the plugins directory
+             # The zip structure is usually plugins-stable -> [plugin1, plugin2]
+             # My Dockerfile moves them to plugins_default/
+             # So plugins_default has: plugin1/, plugin2/
+             # We want: /data/plugins/plugin1/
              cp -r "${DEFAULT_PLUGINS_DIR}"/* "${PLUGINS_DIR}"/
         fi
     fi
 
-    # 3. Permissions Fix
+    # 3. Permissions Fix (Aggressive)
     log "Fixing permissions..."
     chmod -R 777 "${DATA_DIR}" 2>/dev/null || true
 }
 
 main() {
-    log "Starting Asphyxia bootstrap..."
+    log "Starting Asphyxia bootstrap Check..."
     
-    # Auto-detect binary name
     local exec_path
     exec_path=$(find "${INSTALL_DIR}" -maxdepth 1 -name "asphyxia-core*" -type f -not -name "*.ini" | head -n 1)
     [ -x "${exec_path}" ] || die "Executable not found in ${INSTALL_DIR}"
     
     setup_data_dir
+    
+    # SYMLINK Config to default location if missing?
+    # Asphyxia core defaults to reading config.ini in CWD.
+    # Our CWD is /data.
+    # config.ini should be in /data.
+    
+    log "Files in data dir:"
+    ls -l "${DATA_DIR}" >&2
+    log "Plugins in plugins dir:"
+    ls -l "${PLUGINS_DIR}" >&2
 
     log "Running: ${exec_path}"
-    
-    # IMPORTANT: Asphyxia looks for plugins relative to CWD.
-    # We must be in /data for it to find 'plugins' folder there.
     cd "${DATA_DIR}" || die "Failed to change to data dir"
-    
-    # We run the binary directly.
-    # We do NOT pass -d because if we are in /data, it uses ./savedata by default if config says so,
-    # OR we pass explicitly.
-    # The config.ini usually points to savedata.
-    # But let's be explicit with savedata dir.
     
     exec ${exec_path} --savedata-dir "${SAVEDATA_DIR}"
 }
