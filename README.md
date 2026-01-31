@@ -1,4 +1,6 @@
-# Asphyxia Docker
+# Asphyxia Docker v1.60a - ARMv7
+
+# https://hub.docker.com/r/kaanreal/asphyxia
 
 A clean, ready-to-use Docker setup for running the Asphyxia server. This project provides a simple way to deploy Asphyxia using Docker and Docker Compose, making it easy to manage, update, and persist your data.
 
