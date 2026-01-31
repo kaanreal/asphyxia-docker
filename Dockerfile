@@ -18,12 +18,11 @@ RUN wget https://github.com/asphyxia-core/core/releases/download/v1.60a/asphyxia
     chmod +x asphyxia-core-armv7
 
 # 2. Download and prepare the Official Plugins (backup for first-run sync)
-RUN wget https://github.com/asphyxia-core/plugins/archive/refs/heads/master.zip && \
-    unzip master.zip && \
+RUN wget https://github.com/asphyxia-core/plugins/archive/refs/heads/stable.zip && \
+    unzip stable.zip && \
     mkdir -p /app/plugins_backup && \
-    cp -r plugins-master/* /app/plugins_backup/ && \
-    rm -rf master.zip plugins-master
-
+    cp -r plugins-stable/* /app/plugins_backup/ && \
+    rm -rf stable.zip plugins-stable
 # 3. Add the entrypoint script and set permissions
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
