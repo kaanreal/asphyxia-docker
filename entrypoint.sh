@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# 1. Create directories
+# 1. Ensure the data directory structure exists
 mkdir -p /app/data/plugins /app/data/savedata
 
 # 2. Populate plugins if host folder is empty
@@ -9,27 +9,28 @@ if [ ! "$(ls -A /app/data/plugins 2>/dev/null)" ]; then
     cp -r /app/plugins_backup/* /app/data/plugins/
 fi
 
-# 3. Handle config.ini (Copy to workdir, don't link)
+# 3. Handle config.ini (Copy to workdir for better performance)
 if [ ! -f /app/data/config.ini ]; then
     echo "Creating initial config.ini..."
-    # Create a basic config so SDVX doesn't crash on 'join'
-    echo "[sdvx]\nenabled=true" > /app/data/config.ini
+    touch /app/data/config.ini
 fi
 cp /app/data/config.ini /app/config.ini
 
-# 4. Link plugins and savedata
+# 4. Cleanup and Link
+# We link the plugins, but for savedata, we use the -d flag later 
+# to ensure the binary has direct write access to the volume.
 rm -rf /app/plugins /app/savedata
 ln -s /app/data/plugins /app/plugins
-ln -s /app/data/savedata /app/savedata
 
-# 5. FIX PERMISSIONS (Crucial for DB errors)
-# This ensures the internal 'node' user can write the .db file
-chmod -R 777 /app/data
+# 5. Fix permissions for the mapped volume
+# This ensures the internal process can write the .db file to savedata
+echo "Setting permissions for savedata..."
+chmod -R 777 /app/data/savedata
 
 # 6. Start Asphyxia
+# -d points the database and user data to the mounted folder
 echo "Starting Asphyxia Core v1.60a..."
-# We run the binary. When it stops, we save the config back.
-./asphyxia-core-armv7 -d /app/savedata
+./asphyxia-core-armv7 -d /app/data/savedata
 
-# Sync config back to Pi so changes persist
+# 7. Sync config back to Pi after shutdown so WebUI changes persist
 cp /app/config.ini /app/data/config.ini
