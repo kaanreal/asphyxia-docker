@@ -1,4 +1,5 @@
-FROM arm32v7/debian:bookworm-slim
+# Force the platform to ARMv7
+FROM --platform=linux/arm/v7 debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y \
     wget unzip libatomic1 libstdc++6 \
@@ -6,7 +7,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Download Core
+# Download ARMv7 Core
 RUN wget https://github.com/asphyxia-core/core/releases/download/v1.60a/asphyxia-core-armv7.zip && \
     unzip asphyxia-core-armv7.zip && \
     rm asphyxia-core-armv7.zip && \
