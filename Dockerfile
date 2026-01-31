@@ -8,9 +8,9 @@ WORKDIR /usr/local/share
 
 COPY bootstrap.sh .
 
-# Install dependencies (wget, unzip, libstdc++) and setup Asphyxia
+# Install dependencies (wget, unzip, libstdc++, libatomic) and setup Asphyxia
 RUN apt-get update && \
-    apt-get install -y wget unzip libstdc++6 ca-certificates && \
+    apt-get install -y wget unzip libstdc++6 libatomic1 ca-certificates && \
     wget https://github.com/asphyxia-core/core/releases/download/v${ASPHYXIA_VERSION}/asphyxia-core-armv7.zip && \
     wget https://github.com/asphyxia-core/plugins/archive/refs/heads/stable.zip -O plugins-stable.zip && \
     mkdir -p ./asphyxia && \
