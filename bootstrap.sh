@@ -24,16 +24,21 @@ setup_data_dir() {
     if [ ! -f "${CONFIG_FILE}" ]; then
         if [ -f "${DEFAULT_CONFIG_FILE}" ]; then
             log "No config.ini found; copying default config"
-            cp "${DEFAULT_CONFIG_FILE}" "${CONFIG_FILE}"
+            cp    "${DEFAULT_CONFIG_FILE}" "${CONFIG_FILE}"
         fi
     fi
     
     if [ -z "$(ls -A "${PLUGINS_DIR}" 2>/dev/null)" ]; then
         if [ -d "${DEFAULT_PLUGINS_DIR}" ]; then
-            log "No plugins found; copying default plugins"
-            cp -r "${DEFAULT_PLUGINS_DIR}"/* "${PLUGINS_DIR}"/
+             log "No plugins found; copying default plugins..."
+             # Use verbose copy to show what's happening
+             cp -rv "${DEFAULT_PLUGINS_DIR}"/* "${PLUGINS_DIR}"/
         fi
     fi
+
+    # Ensure the user can edit these files on the host (permissions fix)
+    log "Fixing permissions..."
+    chmod -R 777 "${ASPHYXIA_DIR}" 2>/dev/null || true
 }
 
 build_command_args() {
@@ -48,7 +53,7 @@ build_command_args() {
 main() {
     log "Starting Asphyxia bootstrap..."
     
-    # Auto-detect binary name (e.g. asphyxia-core vs asphyxia-core-armv7)
+    # Auto-detect binary name
     local exec_path
     exec_path=$(find "${INSTALL_DIR}" -maxdepth 1 -name "asphyxia-core*" -type f -not -name "*.ini" | head -n 1)
     
