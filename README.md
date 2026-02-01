@@ -18,7 +18,7 @@ If you are building on a standard PC (x86) to run on a Pi, use `buildx`:
 docker login
 
 # Build and Push
-docker buildx build --platform linux/arm/v7 -t kaanreal/asphyxia:latest --push .
+docker buildx build --platform linux/arm/v7 -t USERNAME/asphyxia:latest --push .
 ```
 *(Replace `kaanreal` with your Docker Hub username if needed)*
 
