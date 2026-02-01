@@ -70,7 +70,7 @@ setup_data_dir() {
 }
 
 main() {
-    log "Starting Asphyxia bootstrap Check..."
+    log "Starting Asphyxia bootstrap (Final Fix)..."
     
     local exec_path
     exec_path=$(find "${INSTALL_DIR}" -maxdepth 1 -name "asphyxia-core*" -type f -not -name "*.ini" | head -n 1)
@@ -82,10 +82,9 @@ main() {
     
     log "Running: ./${exec_path##*/} from ${PWD}"
     
-    # Explicitly pass all paths to be sure
-    exec "${exec_path}" \
-        --savedata-dir "${SAVEDATA_DIR}" \
-        --savedata-db "${DATABASE_FILE}"
+    # Run WITHOUT --savedata-db (it's not supported).
+    # It will write to ./savedata.db, which is our symlink to /data/savedata.db.
+    exec "${exec_path}" --savedata-dir "${SAVEDATA_DIR}"
 }
 
 main "$@"
