@@ -8,6 +8,8 @@ readonly DATA_DIR="/data"
 readonly CONFIG_FILE="${DATA_DIR}/config.ini"
 readonly PLUGINS_DIR="${DATA_DIR}/plugins"
 readonly SAVEDATA_DIR="${DATA_DIR}/savedata"
+# Binary in data
+readonly EXEC_FILE="${DATA_DIR}/asphyxia-core"
 
 # Template paths
 readonly DEFAULT_CONFIG_FILE="${INSTALL_DIR}/config_default.ini"
@@ -47,64 +49,34 @@ setup_data_dir() {
         fi
     fi
 
-    # 3. Dynamic Database Persistence
-    # Asphyxia creates [plugin].db in CWD. We want them in /data.
-    # We pre-create and symlink them.
+    # 3. Executable Setup (Copy to Data)
+    # We copy the binary to /data so checks for CWD plugins/db work natively
+    local source_exec
+    source_exec=$(find "${INSTALL_DIR}" -maxdepth 1 -name "asphyxia-core*" -type f -not -name "*.ini" | head -n 1)
+    [ -x "${source_exec}" ] || die "Original executable not found in ${INSTALL_DIR}"
     
-    # Core DB
-    if [ ! -f "${DATA_DIR}/core.db" ]; then touch "${DATA_DIR}/core.db"; fi
-    chmod 666 "${DATA_DIR}/core.db"
-    ln -sf "${DATA_DIR}/core.db" "${INSTALL_DIR}/core.db"
-    
-    # Plugin DBs
-    log "Linking plugin databases..."
-    for plugin_path in "${PLUGINS_DIR}"/*; do
-        if [ -d "$plugin_path" ]; then
-            plugin_name=$(basename "$plugin_path")
-            db_target="${DATA_DIR}/${plugin_name}.db"
-            
-            # Create file if missing
-            if [ ! -f "${db_target}" ]; then 
-                log "Creating DB for ${plugin_name}"
-                touch "${db_target}"
-            fi
-            
-            chmod 666 "${db_target}"
-            # Symlink to Install Dir
-            ln -sf "${db_target}" "${INSTALL_DIR}/${plugin_name}.db"
-        fi
-    done
+    log "Copying binary to data directory for native execution..."
+    cp -f "${source_exec}" "${EXEC_FILE}"
+    chmod +x "${EXEC_FILE}"
 
-    # 4. Permissions Fix
+    # 4. Cleanup old symlinks/DBs in data if they interfere?
+    # No, we want DBs to be created there.
+
     log "Fixing permissions..."
     chmod -R 777 "${DATA_DIR}" 2>/dev/null || true
-    
-    # 5. SYMLINK FIX (Plugins/Config)
-    if [ -d "${INSTALL_DIR}/plugins" ] && [ ! -L "${INSTALL_DIR}/plugins" ]; then
-        rm -rf "${INSTALL_DIR}/plugins"
-    fi
-
-    ln -sf "${CONFIG_FILE}" "${INSTALL_DIR}/config.ini" || true
-    ln -sf "${PLUGINS_DIR}" "${INSTALL_DIR}/plugins" || true
-    
-    rm -rf "${INSTALL_DIR}/savedata"
-    ln -sf "${SAVEDATA_DIR}" "${INSTALL_DIR}/savedata" || true
 }
 
 main() {
-    log "Starting Asphyxia bootstrap (Dynamic DB Link)..."
-    
-    local exec_path
-    exec_path=$(find "${INSTALL_DIR}" -maxdepth 1 -name "asphyxia-core*" -type f -not -name "*.ini" | head -n 1)
-    [ -x "${exec_path}" ] || die "Executable not found in ${INSTALL_DIR}"
+    log "Starting Asphyxia bootstrap (All-In-Data Strategy)..."
     
     setup_data_dir
     
-    cd "${INSTALL_DIR}" || die "Failed to change to install dir"
+    cd "${DATA_DIR}" || die "Failed to change to data dir"
     
-    log "Running: ./${exec_path##*/} from ${PWD}"
+    log "Running: ./asphyxia-core from ${PWD}"
     
-    exec "${exec_path}" --savedata-dir "${SAVEDATA_DIR}"
+    # Execute the copy in /data
+    exec ./asphyxia-core --savedata-dir "${SAVEDATA_DIR}"
 }
 
 main "$@"
