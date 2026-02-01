@@ -8,6 +8,7 @@ readonly DATA_DIR="/data"
 readonly CONFIG_FILE="${DATA_DIR}/config.ini"
 readonly PLUGINS_DIR="${DATA_DIR}/plugins"
 readonly SAVEDATA_DIR="${DATA_DIR}/savedata"
+readonly DATABASE_FILE="${DATA_DIR}/savedata.db"
 
 # Template paths (Inside image)
 readonly DEFAULT_CONFIG_FILE="${INSTALL_DIR}/config_default.ini"
@@ -33,13 +34,13 @@ setup_data_dir() {
             cp "${DEFAULT_CONFIG_FILE}" "${CONFIG_FILE}"
         fi
     fi
-    # Create a basic config if completely missing
+    # Force minimal config structure if missing
     if [ ! -f "${CONFIG_FILE}" ]; then
-        log "WARNING: No config found anywhere. Creating minimal config."
+        log "WARNING: Creating fresh config.ini."
         echo "[core]" > "${CONFIG_FILE}"
         echo "target=s" >> "${CONFIG_FILE}"
     fi
-    
+
     # 2. Plugins Setup
     if [ -z "$(ls -A "${PLUGINS_DIR}" 2>/dev/null)" ]; then
         if [ -d "${DEFAULT_PLUGINS_DIR}" ]; then
@@ -52,11 +53,7 @@ setup_data_dir() {
     chmod -R 777 "${DATA_DIR}" 2>/dev/null || true
     
     # 3. SYMLINK FIX
-    # We remove the local 'plugins' folder in INSTALL_DIR if it's an empty directory
-    # so we can symlink it. 
-    # Docker unzip might have created an empty 'plugins' dir.
     if [ -d "${INSTALL_DIR}/plugins" ] && [ ! -L "${INSTALL_DIR}/plugins" ]; then
-        log "Removing empty plugins dir in install location to make room for symlink..."
         rm -rf "${INSTALL_DIR}/plugins"
     fi
 
@@ -66,10 +63,14 @@ setup_data_dir() {
     
     rm -rf "${INSTALL_DIR}/savedata"
     ln -sf "${SAVEDATA_DIR}" "${INSTALL_DIR}/savedata" || true
+    
+    # Symlink DB file specifically if it doesn't exist in install location
+    # Asphyxia creates savedata.db in CWD.
+    ln -sf "${DATABASE_FILE}" "${INSTALL_DIR}/savedata.db" || true
 }
 
 main() {
-    log "Starting Asphyxia bootstrap (Run-From-Install Strategy)..."
+    log "Starting Asphyxia bootstrap Check..."
     
     local exec_path
     exec_path=$(find "${INSTALL_DIR}" -maxdepth 1 -name "asphyxia-core*" -type f -not -name "*.ini" | head -n 1)
@@ -77,16 +78,14 @@ main() {
     
     setup_data_dir
     
-    # Debug info
-    log "Verifying Install Dir Symlinks:"
-    ls -l "${INSTALL_DIR}" >&2
-
-    # Change to INSTALL_DIR so Asphyxia sees "plugins" and "config.ini" locally
     cd "${INSTALL_DIR}" || die "Failed to change to install dir"
     
     log "Running: ./${exec_path##*/} from ${PWD}"
     
-    exec "${exec_path}" --savedata-dir "${SAVEDATA_DIR}"
+    # Explicitly pass all paths to be sure
+    exec "${exec_path}" \
+        --savedata-dir "${SAVEDATA_DIR}" \
+        --savedata-db "${DATABASE_FILE}"
 }
 
 main "$@"
