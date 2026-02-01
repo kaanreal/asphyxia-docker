@@ -8,9 +8,8 @@ readonly DATA_DIR="/data"
 readonly CONFIG_FILE="${DATA_DIR}/config.ini"
 readonly PLUGINS_DIR="${DATA_DIR}/plugins"
 readonly SAVEDATA_DIR="${DATA_DIR}/savedata"
-readonly DATABASE_FILE="${DATA_DIR}/savedata.db"
 
-# Template paths (Inside image)
+# Template paths
 readonly DEFAULT_CONFIG_FILE="${INSTALL_DIR}/config_default.ini"
 readonly DEFAULT_PLUGINS_DIR="${INSTALL_DIR}/plugins_default"
 
@@ -34,8 +33,7 @@ setup_data_dir() {
             cp "${DEFAULT_CONFIG_FILE}" "${CONFIG_FILE}"
         fi
     fi
-    # Force minimal config structure if missing
-    if [ ! -f "${CONFIG_FILE}" ]; then
+     if [ ! -f "${CONFIG_FILE}" ]; then
         log "WARNING: Creating fresh config.ini."
         echo "[core]" > "${CONFIG_FILE}"
         echo "target=s" >> "${CONFIG_FILE}"
@@ -49,28 +47,52 @@ setup_data_dir() {
         fi
     fi
 
+    # 3. Dynamic Database Persistence
+    # Asphyxia creates [plugin].db in CWD. We want them in /data.
+    # We pre-create and symlink them.
+    
+    # Core DB
+    if [ ! -f "${DATA_DIR}/core.db" ]; then touch "${DATA_DIR}/core.db"; fi
+    chmod 666 "${DATA_DIR}/core.db"
+    ln -sf "${DATA_DIR}/core.db" "${INSTALL_DIR}/core.db"
+    
+    # Plugin DBs
+    log "Linking plugin databases..."
+    for plugin_path in "${PLUGINS_DIR}"/*; do
+        if [ -d "$plugin_path" ]; then
+            plugin_name=$(basename "$plugin_path")
+            db_target="${DATA_DIR}/${plugin_name}.db"
+            
+            # Create file if missing
+            if [ ! -f "${db_target}" ]; then 
+                log "Creating DB for ${plugin_name}"
+                touch "${db_target}"
+            fi
+            
+            chmod 666 "${db_target}"
+            # Symlink to Install Dir
+            ln -sf "${db_target}" "${INSTALL_DIR}/${plugin_name}.db"
+        fi
+    done
+
+    # 4. Permissions Fix
     log "Fixing permissions..."
     chmod -R 777 "${DATA_DIR}" 2>/dev/null || true
     
-    # 3. SYMLINK FIX
+    # 5. SYMLINK FIX (Plugins/Config)
     if [ -d "${INSTALL_DIR}/plugins" ] && [ ! -L "${INSTALL_DIR}/plugins" ]; then
         rm -rf "${INSTALL_DIR}/plugins"
     fi
 
-    log "Symlinking data to install dir..."
     ln -sf "${CONFIG_FILE}" "${INSTALL_DIR}/config.ini" || true
     ln -sf "${PLUGINS_DIR}" "${INSTALL_DIR}/plugins" || true
     
     rm -rf "${INSTALL_DIR}/savedata"
     ln -sf "${SAVEDATA_DIR}" "${INSTALL_DIR}/savedata" || true
-    
-    # Symlink DB file specifically if it doesn't exist in install location
-    # Asphyxia creates savedata.db in CWD.
-    ln -sf "${DATABASE_FILE}" "${INSTALL_DIR}/savedata.db" || true
 }
 
 main() {
-    log "Starting Asphyxia bootstrap (Final Fix)..."
+    log "Starting Asphyxia bootstrap (Dynamic DB Link)..."
     
     local exec_path
     exec_path=$(find "${INSTALL_DIR}" -maxdepth 1 -name "asphyxia-core*" -type f -not -name "*.ini" | head -n 1)
@@ -82,8 +104,6 @@ main() {
     
     log "Running: ./${exec_path##*/} from ${PWD}"
     
-    # Run WITHOUT --savedata-db (it's not supported).
-    # It will write to ./savedata.db, which is our symlink to /data/savedata.db.
     exec "${exec_path}" --savedata-dir "${SAVEDATA_DIR}"
 }
 
