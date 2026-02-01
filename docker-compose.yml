@@ -1,23 +1,18 @@
-version: "3.8"
-
 services:
-    asphyxia:
-        # This matches the image you build and push
-        image: kaanreal/asphyxia:latest # alternative: ghcr.io/kaanreal/asphyxia-docker:latest
-        container_name: asphyxia
-        restart: unless-stopped
-        ports:
-            - "8083:8083"
-        volumes:
-            # PERSISTENCE:
-            # This maps a folder on your host to the container's /data folder.
-            # Everything (Config, Plugins, SaveData) lives here.
-
-            - /home/pi/asphyxia-data:/data
-
-            # For Portainer / Raspberry Pi (Recommended):
-            # Use an absolute path so Portainer doesn't lose it.
-            # - /home/pi/asphyxia-data:/data
-
-        environment:
-            - TZ=Europe/Amsterdam
+  asphyxia:
+    # Use your Docker Hub username.
+    # Example: kaanreal/asphyxia:latest
+    image: kaanreal/asphyxia:latest
+    container_name: asphyxia
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    volumes:
+      # PERSISTENCE:
+      # Maps the host folder to the container's data directory.
+      
+      # usage: /path/to/local/folder:/data
+      - /home/pi/asphyxia-data:/data
+      
+    environment:
+      - TZ=Europe/Amsterdam

@@ -1,81 +1,58 @@
 # Asphyxia Docker for ARMv7 (Raspberry Pi)
 
-# https://hub.docker.com/r/kaanreal/asphyxia
-
 A production-ready Docker setup for Asphyxia CORE, optimized for Raspberry Pi (ARMv7) and Portainer usage.
 
 ## Features
+- **ARMv7 Native**: Uses `debian:bullseye-slim` for maximum compatibility with Raspberry Pi 3/4.
+- **Single-Volume Persistence**: All data (config, plugins, profiles, and the binary) is stored in `/data`.
+- **Auto-Provisioning**: Automatically populates default configurations and plugins on the first boot.
+- **Portainer Optimized**: Designed to work seamlessly with Portainer Stacks using absolute paths.
 
-- **ARMv7 Native**: Uses `debian:bullseye-slim` for maximum compatibility with Raspberry Pi.
-- **Persistence**: All data (config, plugins, profiles) is stored in a single volume (`/data`).
-- **Auto-Setup**: Automatically populates default config and plugins on first run.
-- **Robust**: binary runs directly from the persistence layer to prevent pathfinding errors.
+## Deployment
 
-## Deployment Instructions
-
-### Option 1: Portainer (Recommended)
-
-Since Portainer cannot build from local files easily, you must build the image locally and push it to Docker Hub, or use a pre-built image.
-
-**1. Build & Push (Run on your PC)**
-
-```powershell
-# Login to Docker Hub first
-docker login
-
-# Build for ARMv7 and push
-docker buildx build --platform linux/arm/v7 -t kaanreal/asphyxia:latest --push .
-```
-
-**2. Deploy Stack (On Portainer)**
-Create a new stack with the following configuration:
-
-```yaml
-version: "3.8"
-
-services:
-    asphyxia:
-        # This matches the image you build and push
-        image: kaanreal/asphyxia:latest # alternative: ghcr.io/kaanreal/asphyxia-docker:latest
-        container_name: asphyxia
-        restart: unless-stopped
-        ports:
-            - "8083:8083"
-        volumes:
-            # PERSISTENCE:
-            # This maps a folder on your host to the container's /data folder.
-            # Everything (Config, Plugins, SaveData) lives here.
-
-            - /home/pi/asphyxia-data:/data
-
-            # For Portainer / Raspberry Pi (Recommended):
-            # Use an absolute path so Portainer doesn't lose it.
-            # - /home/pi/asphyxia-data:/data
-
-        environment:
-            - TZ=Europe/Amsterdam
-```
-
-### Option 2: Docker CLI
-
-If you have the files on your Pi, you can run directly:
+### 1. Build for ARMv7
+If you are building on a standard PC (x86) to run on a Pi, use `buildx`:
 
 ```bash
-docker-compose up -d --build
+# Login first
+docker login
+
+# Build and Push
+docker buildx build --platform linux/arm/v7 -t kaanreal/asphyxia:latest --push .
+```
+*(Replace `kaanreal` with your Docker Hub username if needed)*
+
+### 2. Portainer / Docker Compose
+Use this stack configuration. **Note:** Ensure the host path exists or Docker will create it as root.
+
+```yaml
+services:
+  asphyxia:
+    image: kaanreal/asphyxia:latest
+    container_name: asphyxia
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    volumes:
+      # Change /home/pi/asphyxia-data to your preferred local path
+      - /home/pi/asphyxia-data:/data
+    environment:
+      - TZ=Europe/Amsterdam
 ```
 
-## Directory Structure (On Host)
+## Directory Structure
+Once initialized, your `/data` folder will be populated as follows:
 
-Once running, your mapped folder (e.g., `/home/pi/asphyxia-data`) will contain:
+| File/Folder | Purpose |
+|---|---|
+| `config.ini` | Main server settings. |
+| `plugins/` | Drop your `.js` plugins here. |
+| `savedata/` | Local save files and user profiles. |
+| `asphyxia-core` | The executable (stored in volume for easy updates). |
 
-| File/Folder     | Description                                                   |
-| --------------- | ------------------------------------------------------------- |
-| `config.ini`    | Main server configuration. Edit this file to change settings. |
-| `plugins/`      | Place custom plugins here.                                    |
-| `savedata/`     | User profiles and score data. Backup this folder!             |
-| `savedata.db`   | Main database file (SQLite).                                  |
-| `asphyxia-core` | The server binary (do not modify).                            |
+## ⚠️ A Note on Permissions
+If the container fails to start due to "Permission Denied," run the following on your Raspberry Pi:
 
-## Troubleshooting
-
-- **Permission Errors?** The container attempts to fix permissions automatically (`chmod 777`), but you can manually run `sudo chown -R $USER:$USER ./asphyxia-data` if you cannot edit files on the host.
+```bash
+sudo chown -R 1000:1000 /home/pi/asphyxia-data
+```
