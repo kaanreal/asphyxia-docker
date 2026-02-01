@@ -3,7 +3,7 @@ version: "3.8"
 services:
     asphyxia:
         # This matches the image you build and push
-        image: kaanreal/asphyxia:latest
+        image: kaanreal/asphyxia:latest # alternative: ghcr.io/kaanreal/asphyxia-docker:latest
         container_name: asphyxia
         restart: unless-stopped
         ports:
